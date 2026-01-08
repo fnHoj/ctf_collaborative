@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character select</title>
+    <link rel="stylesheet" href="/style.css"/>
+    <style>
+        :root {
+            text-align: center;
+        }
+        body {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: center;
+        }
+        #main {
+            flex: 0 1 60%;
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+        }
+        #main > a {
+            flex: 0 1 30%;
+            margin-inline: 2%;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            border-radius: 1em;
+            text-decoration: none;
+            color: inherit;
+        }
+        .character {
+            flex: 1 1 0;
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+            margin-block-end: 1em;
+        }
+        .anim {
+            display: none;
+        }
+        #main > :hover {
+            background-color: #fff1;
+        }
+        #main > :hover .anim {
+            display: block;
+        }
+        #main > :hover .still {
+            display: none;
+        }
+        h2 {
+            margin-block-end: 0;
+        }
+        p {
+            margin-block-start: 0;
+            color: #fff6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Pick your side!</h1>
+    <div id="main">
+        <a href="/left" id="left">
+            <h2>LTeam</h2>
+            <p>👥 {{ pl }}</p>
+            <div class="character still" style="background-image: url(/assets/l0.png)"></div>
+            <div class="character anim" style="background-image: url(/assets/l1.gif)"></div>
+        </a>
+        <a href="/right" id="right">
+            <h2>RTeam</h2>
+            <p>👥 {{ pr }}</p>
+            <div class="character still" style="background-image: url(/assets/r0.png)"></div>
+            <div class="character anim" style="background-image: url(/assets/r1.gif)"></div>
+        </a>
+    </div>
+</body>
+</html>

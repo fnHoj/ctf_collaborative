@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SocketIO 示例</title>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+</head>
+<body>
+    <div id="messages"></div>
+    <form>
+        <input type="text" id="messageInput">
+    </form>
+    <button onclick="sendMessage()">发送</button>
+    <p>{{ side }}</p>
+
+    <script>
+        const socket = io();
+        
+        socket.on('connect', () => {
+            console.log('已连接到服务器');
+            addMessage('连接成功');
+        });
+        
+        socket.on('server_response', (data) => {
+            addMessage('服务器: ' + data.data);
+        });
+        
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value;
+            if (message) {
+                socket.emit('client_message', message);
+                addMessage('我: ' + message);
+                input.value = '';
+            }
+        }
+        
+        function addMessage(msg) {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            document.getElementById('messages').appendChild(div);
+        }
+
+        document.querySelector("form").addEventListener("submit", e => {
+            e.preventDefault();
+            sendMessage();
+        });
+    </script>
+</body>
+</html>
