@@ -11,7 +11,10 @@ from random import randint
 app = Flask(__name__, static_folder="static")
 app.config["SECRET_KEY"] = "pIvF83EHXOPh8S8iUSRRcBJMM4Vt98puOJIh_nsAQ2x05td82xPXO8TrCGe3X3OF9S6WxrtLQQQO7UkYX7fArcDHidg0UkeUF_BExbJi1beWD8L2wq5nFgVEVsSOgEBkjv5gStJpMGlcREK5R8nM4SPrSdlry1SwfgWRnvYxF6pRTxopfKHefDKcW_MBNjfOo37lDnlvP94roO4qhp_tsEUOQWntKT2BcNic0O_rm8okcna_0vxQj_8Qc6Bq1Ptt"
 app.config["MAX_CONTENT_LENGTH"] = 1 << 10
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    max_http_buffer_size=0x100)
 
 turn_duration = 0.3
 
@@ -30,8 +33,8 @@ def run_game():
     global last_update, last_status
     while True:
         last_update = time()
-        for player in game.players:
-            player.direction = randint(0, 3)
+        # for player in game.players:
+        #     player.direction = randint(0, 3)
         last_status = dumps(game.turn())
         socketio.emit("turn", last_status, to="left") # type: ignore
         socketio.emit("turn", last_status, to="right") # type: ignore
@@ -42,11 +45,18 @@ def handle_connect():
     if request.remote_addr in side:
         join_room("right" if side[request.remote_addr] else "left")
 
-@socketio.on('client_message')
-def handle_message(data: Any):
-    print('收到消息:', data)
-    # emit('server_response', {'data': f'收到: {data}'}, broadcast=True)
-    # emit('server_response', {'data': f'消息已处理; {request.remote_addr}'})
+@socketio.on('move')
+def handle_message(data: dict[str, Any]):
+    try:
+        assert request.remote_addr in side
+        p = int(data["p"])
+        assert game.players[p].team == side[request.remote_addr]
+        d = int(data["d"])
+        if d < 0 or d > 4:
+            d = 4
+        game.players[p].direction = d
+    except:
+        pass
 
 @app.route("/left")
 def left():

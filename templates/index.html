@@ -42,12 +42,20 @@
             inline-size: min(128px, 100%);
             margin-inline: auto;
         }
+        .controls {
+            position: absolute;
+            inset-inline: 0;
+            inset-block-end: 0;
+            margin: 0;
+            color: #777;
+        }
     </style>
     <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
 </head>
 <body>
     <canvas id="bg" width="640" height="640"></canvas>
     <div id="main">
+        <p class="controls"><kbd>WASD</kbd>: move around<br/><kbd>Q/E</kbd>: switch player<br/><kbd>Space</kbd>: stand still</p>
         <div class="side left">
             <p id="lscore">{{ lscore }}</p>
             {{ "" if side else '<img src="assets/l1.gif"/>'|safe }}
@@ -69,12 +77,24 @@
         const side = {{ "true" if side else "false" }};
         let updated = {{ last_update * 1000 }} - performance.timeOrigin;
         let status = {{ last_status|safe }};
-        const turn_duration = {{ turn_duration * 1000 }}
+        const turn_duration = {{ turn_duration * 1000 }};
 
+        let qp = Math.floor(Math.random() * 3);
+        let ep = Math.random() < 0.5 ? 0 : 1;;
+        if (ep >= qp)
+            ep++;
+        let cp = 3 - qp - ep;
+        if (side) {
+            qp += 3;
+            ep += 3;
+            cp += 3;
+        }
+        
         const main = document.getElementById("main");
         const error = document.getElementById("error");
         const error_msg = document.getElementById("error_msg");
-
+        
+        const anim_step = 150;
         const /** @type {HTMLCanvasElement} */ game_canvas = document.getElementById("game");
         const /** @type {HTMLCanvasElement} */ bg_canvas = document.getElementById("bg");
         const ctx = game_canvas.getContext("2d");
@@ -151,33 +171,69 @@
             ctx.fillRect(0x13f, 0, 2, 0x280);
         }
 
-        function draw_players() {
-            let ds = (performance.now() - updated) / turn_duration;
-            for ({team, row, col, direction} of status) {
-                switch (direction) {
-                    case 0:
-                        row += ds;
-                        break;
-                    case 1:
-                        row -= ds;
-                        break;
-                    case 2:
-                        col += ds;
-                        break;
-                    case 3:
-                        col -= ds;
-                        break;
-                }
-                ctx.drawImage(chars, 0x20, team ? 0 : 0x120, 0x20, 0x20, col * 32, row * 32, 0x20, 0x20);
+        function anim(t = performance.now()) {
+            switch (Math.floor(t / anim_step) % 4) {
+                case 1:
+                    return 1;
+                case 3:
+                    return 2;
             }
+            return 0;
         }
 
+        function draw_players(t = performance.now()) {
+            let ds = (t - updated) / turn_duration;
+            for (let i = 0; i < status.length; i++) {
+                let sx = status[i].direction;
+                let sy = anim(t);
+                let y = status[i].row;
+                let x = status[i].col;
+                switch (status[i].direction) {
+                    case 0:
+                        y += ds;
+                        break;
+                    case 1:
+                        y -= ds;
+                        break;
+                    case 2:
+                        x += ds;
+                        break;
+                    case 3:
+                        x -= ds;
+                        break;
+                    default:
+                        sx = 0;
+                        if (!status[i].prison)
+                            sy = 0;
+                }
+                if (i == cp) {
+                    let a = t / (4 * anim_step);
+                    a -= Math.floor(a);
+                    a *= Math.PI;
+                    let c = Math.cos(a);
+                    let s = Math.sin(a);
+                    let p = new Path2D();
+                    p.moveTo((x + 0.5 - 0.5 * c) * 32, (y - 0.5 * s) * 32);
+                    p.lineTo((x + 1 + 0.5 * s) * 32, (y + 0.5 - 0.5 * c) * 32);
+                    p.lineTo((x + 0.5 + 0.5 * c) * 32, (y + 1 + 0.5 * s) * 32);
+                    p.lineTo((x - 0.5 * s) * 32, (y + 0.5 + 0.5 * c) * 32);
+                    p.closePath();
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = "#000";
+                    ctx.stroke(p);
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "#fff";
+                    ctx.stroke(p);
+                }
+                ctx.drawImage(chars, sx << 5, (sy + (status[i].flag ? 6 : 0) + (status[i].team ? 3 : 0)) << 5, 0x20, 0x20, x * 32, y * 32, 0x20, 0x20);
+            }
+        }
         
         function render(t = performance.now()) {
             ctx.drawImage(bg_canvas, 0, 0);
             draw_players();
         }
-        
+
         function init() {
             draw_bg();
             const socket = io();
@@ -191,6 +247,33 @@
                 updated = performance.now();
                 status = JSON.parse(data);
             });
+            addEventListener("keydown", e => {
+                if (e.repeat)
+                    return;
+                switch (e.code) {
+                    case "KeyQ":
+                        qp ^= cp; cp ^= qp; qp ^= cp;
+                        break;
+                    case "KeyE":
+                        ep ^= cp; cp ^= ep; ep ^= cp;
+                        break;
+                    case "KeyW":
+                        socket.emit("move", {p: cp, d: 1});
+                        break;
+                    case "KeyA":
+                        socket.emit("move", {p: cp, d: 3});
+                        break;
+                    case "KeyS":
+                        socket.emit("move", {p: cp, d: 0});
+                        break;
+                    case "KeyD":
+                        socket.emit("move", {p: cp, d: 2});
+                        break;
+                    case "Space":
+                        socket.emit("move", {p: cp, d: 4});
+                }
+            });
+            frame();
         }
 
         function frame() {
@@ -198,9 +281,7 @@
             render();
         }
 
-
         init();
-        frame();
     </script>
 </body>
 </html>

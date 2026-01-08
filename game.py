@@ -19,11 +19,13 @@ class Player:
     pos: Coords
     direction: int
     prison: bool
-    def __init__(self, team: bool, pos: Coords, direction: int = 0, prison: bool = False) -> None:
+    flag: bool
+    def __init__(self, team: bool, pos: Coords, direction: int = 4, flag: bool = False, prison: bool = False) -> None:
         self.team = team
         self.pos = pos
         self.direction = direction
         self.prison = prison
+        self.flag = flag
 
 class Board:
     barriers: Grid[bool]
@@ -99,5 +101,7 @@ class Game(Board):
                 target = player.pos
             player.pos = target
             p["direction"] = player.direction
+            p["flag"] = player.flag
+            p["prison"] = player.prison
             res.append(p)
         return res
