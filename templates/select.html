@@ -6,13 +6,9 @@
     <title>Character select</title>
     <link rel="stylesheet" href="/style.css"/>
     <style>
-        :root {
-            text-align: center;
-        }
         body {
             position: absolute;
             inset: 0;
-            margin: 0;
             display: flex;
             flex-direction: column;
             align-items: stretch;
@@ -53,27 +49,18 @@
         #main > :hover .still {
             display: none;
         }
-        h2 {
-            margin-block-end: 0;
-        }
-        p {
-            margin-block-start: 0;
-            color: #fff6;
-        }
     </style>
 </head>
 <body>
-    <h1>Pick your side!</h1>
+    <h1>Pick your side...</h1>
     <div id="main">
         <a href="/left" id="left">
             <h2>LTeam</h2>
-            <p>👥 {{ pl }}</p>
             <div class="character still" style="background-image: url(/assets/l0.png)"></div>
             <div class="character anim" style="background-image: url(/assets/l1.gif)"></div>
         </a>
         <a href="/right" id="right">
             <h2>RTeam</h2>
-            <p>👥 {{ pr }}</p>
             <div class="character still" style="background-image: url(/assets/r0.png)"></div>
             <div class="character anim" style="background-image: url(/assets/r1.gif)"></div>
         </a>

@@ -1,49 +1,206 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>SocketIO 示例</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTF Collaborative</title>
+    <link rel="stylesheet" href="/style.css"/>
+    <style>
+        #main, #error {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+        }
+        #error {
+            flex-direction: column;
+        }
+        #main, #bg {
+            display: none;
+        }
+        #error img {
+            inline-size: 4em;
+        }
+        #game {
+            margin-block: 15vh;
+        }
+        .side {
+            flex: 1 0 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: space-between;
+        }
+        .side p {
+            margin-block: min(1em, 15%) 0;
+            font-weight: bold;
+            font-family: monospace;
+            font-size: 400%;
+        }
+        .side img {
+            inline-size: min(128px, 100%);
+            margin-inline: auto;
+        }
+    </style>
     <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
 </head>
 <body>
-    <div id="messages"></div>
-    <form>
-        <input type="text" id="messageInput">
-    </form>
-    <button onclick="sendMessage()">发送</button>
-    <p>{{ side }}</p>
+    <canvas id="bg" width="640" height="640"></canvas>
+    <div id="main">
+        <div class="side left">
+            <p id="lscore">{{ lscore }}</p>
+            {{ "" if side else '<img src="assets/l1.gif"/>'|safe }}
+        </div>
+        <canvas id="game" width="640" height="640"></canvas>
+        <div class="side right">
+            <p id="rscore">{{ rscore }}</p>
+            {{ '<img src="assets/r1.gif"/>'|safe if side else "" }}
+        </div>
+    </div>
+    <div id="error">
+        <div>
+            <img src="/assets/red_flag_32_32.png"/>
+        </div>
+        <p id="error_msg">Connecting to server...</p>
+    </div>
 
     <script>
-        const socket = io();
-        
-        socket.on('connect', () => {
-            console.log('已连接到服务器');
-            addMessage('连接成功');
-        });
-        
-        socket.on('server_response', (data) => {
-            addMessage('服务器: ' + data.data);
-        });
-        
-        function sendMessage() {
-            const input = document.getElementById('messageInput');
-            const message = input.value;
-            if (message) {
-                socket.emit('client_message', message);
-                addMessage('我: ' + message);
-                input.value = '';
-            }
-        }
-        
-        function addMessage(msg) {
-            const div = document.createElement('div');
-            div.textContent = msg;
-            document.getElementById('messages').appendChild(div);
+        const side = {{ "true" if side else "false" }};
+        let updated = {{ last_update * 1000 }} - performance.timeOrigin;
+        let status = {{ last_status|safe }};
+        const turn_duration = {{ turn_duration * 1000 }}
+
+        const main = document.getElementById("main");
+        const error = document.getElementById("error");
+        const error_msg = document.getElementById("error_msg");
+
+        const /** @type {HTMLCanvasElement} */ game_canvas = document.getElementById("game");
+        const /** @type {HTMLCanvasElement} */ bg_canvas = document.getElementById("bg");
+        const ctx = game_canvas.getContext("2d");
+
+        function image_load(/** @type {HTMLImageElement} */ img) {
+            return new Promise((resolve, reject) => {
+                function resolve_if_valid() {
+                    if (img.naturalWidth === 0)
+                        reject(new Error("Failed to load image"));
+                    else
+                        resolve();
+                }
+                img.addEventListener("load", () => resolve_if_valid());
+                if (img.complete)
+                    resolve_if_valid();
+            });
         }
 
-        document.querySelector("form").addEventListener("submit", e => {
-            e.preventDefault();
-            sendMessage();
-        });
+        const tileset = new Image();
+        const chars = new Image();
+        tileset.src = "/assets/tiles.png";
+        chars.src = "/assets/characters.png";
+
+        function show_main() {
+            main.style.display = "flex";
+            error.style.display = "none";
+        }
+        function show_error(msg = "Something went wrong...") {
+            error_msg.textContent = msg;
+            error.style.display = "flex";
+            main.style.display = "none";
+        }
+
+        async function draw_bg() {
+            const ctx = bg_canvas.getContext("2d");
+            await image_load(tileset);
+            for (let row = 0; row < 20; row++) {
+                for (let col = 0; col < 20; col++) {
+                    if (Math.random() < 0.05)
+                        ctx.drawImage(tileset, 0xe0, 0x60, 0x20, 0x20, col << 5, row << 5, 0x20, 0x20);
+                    else if (19 * Math.random() < 1)
+                        ctx.drawImage(tileset, 0x40, 0, 0x20, 0x20, col << 5, row << 5, 0x20, 0x20);
+                    else if (9 * Math.random() < 4)
+                        ctx.drawImage(tileset, 0x20, 0, 0x20, 0x20, col << 5, row << 5, 0x20, 0x20);
+                    else
+                        ctx.drawImage(tileset, 0, 0, 0x20, 0x20, col << 5, row << 5, 0x20, 0x20);
+                }
+            }
+            ctx.drawImage(tileset, 0x100, 0x60, 0x20, 0x20, 0, 0, 0x20, 0x20);
+            ctx.drawImage(tileset, 0x140, 0x60, 0x20, 0x20, 0x260, 0, 0x20, 0x20);
+            ctx.drawImage(tileset, 0x100, 0xa0, 0x20, 0x20, 0, 0x260, 0x20, 0x20);
+            ctx.drawImage(tileset, 0x140, 0xa0, 0x20, 0x20, 0x260, 0x260, 0x20, 0x20);
+            ctx.drawImage(tileset, 0, 0x20, 0x60, 0x60, 0x20, 0x120, 0x60, 0x60);
+            ctx.drawImage(tileset, 0, 0x20, 0x60, 0x60, 0x200, 0x120, 0x60, 0x60);
+            ctx.drawImage(tileset, 0, 0x100, 0x60, 0x60, 0x20, 0x200, 0x60, 0x60);
+            ctx.drawImage(tileset, 0, 0x100, 0x60, 0x60, 0x200, 0x200, 0x60, 0x60);
+            for (let i = 1; i < 19; i++) {
+                ctx.drawImage(tileset, 0x100, 0x80, 0x20, 0x20, 0, i << 5, 0x20, 0x20);
+                ctx.drawImage(tileset, 0x140, 0x80, 0x20, 0x20, 0x260, i << 5, 0x20, 0x20);
+                ctx.drawImage(tileset, 0x120, 0x60, 0x20, 0x20, i << 5, 0, 0x20, 0x20);
+                ctx.drawImage(tileset, 0x120, 0x60, 0x20, 0x20, i << 5, 0x260, 0x20, 0x20);
+            }
+            for (const {row, col, tall} of {{ board|safe }}) {
+                if (tall)
+                    ctx.drawImage(tileset, Math.random() < 0.5 ? 0x60 : 0x80, 0, 0x20, 0x40, col << 5, row << 5, 0x20, 0x40);
+                else {
+                    if (Math.random() < 0.4)
+                        ctx.drawImage(tileset, 0xa0, Math.random() < 0.5 ? 0 : 0x20, 0x20, 0x20, col << 5, row << 5, 0x20, 0x20);
+                    else
+                        ctx.drawImage(tileset, (3 + Math.floor(3 * Math.random()) << 5), 0x40, 0x20, 0x20, col << 5, row << 5, 0x20, 0x20);
+                }
+            }
+            ctx.fillStyle = "#0007";
+            ctx.fillRect(0x13f, 0, 2, 0x280);
+        }
+
+        function draw_players() {
+            let ds = (performance.now() - updated) / turn_duration;
+            for ({team, row, col, direction} of status) {
+                switch (direction) {
+                    case 0:
+                        row += ds;
+                        break;
+                    case 1:
+                        row -= ds;
+                        break;
+                    case 2:
+                        col += ds;
+                        break;
+                    case 3:
+                        col -= ds;
+                        break;
+                }
+                ctx.drawImage(chars, 0x20, team ? 0 : 0x120, 0x20, 0x20, col * 32, row * 32, 0x20, 0x20);
+            }
+        }
+
+        
+        function render(t = performance.now()) {
+            ctx.drawImage(bg_canvas, 0, 0);
+            draw_players();
+        }
+        
+        function init() {
+            draw_bg();
+            const socket = io();
+            socket.on("connect", () => {
+                show_main();
+            });
+            socket.on("disconnect", () => {
+                show_error("Connecting to server...");
+            });
+            socket.on("turn", data => {
+                updated = performance.now();
+                status = JSON.parse(data);
+            });
+        }
+
+        function frame() {
+            requestAnimationFrame(frame);
+            render();
+        }
+
+
+        init();
+        frame();
     </script>
 </body>
 </html>

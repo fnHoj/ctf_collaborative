@@ -1,31 +1,52 @@
 from flask import Flask, request, send_from_directory, render_template, redirect
-from flask_socketio import SocketIO, emit # type: ignore
+from flask_socketio import SocketIO, emit, join_room # type: ignore
+from threading import Thread
 from typing import Any
+from game import Game
+from time import time, sleep
+from json import dumps
+
+from random import randint
 
 app = Flask(__name__, static_folder="static")
 app.config["SECRET_KEY"] = "pIvF83EHXOPh8S8iUSRRcBJMM4Vt98puOJIh_nsAQ2x05td82xPXO8TrCGe3X3OF9S6WxrtLQQQO7UkYX7fArcDHidg0UkeUF_BExbJi1beWD8L2wq5nFgVEVsSOgEBkjv5gStJpMGlcREK5R8nM4SPrSdlry1SwfgWRnvYxF6pRTxopfKHefDKcW_MBNjfOo37lDnlvP94roO4qhp_tsEUOQWntKT2BcNic0O_rm8okcna_0vxQj_8Qc6Bq1Ptt"
 app.config["MAX_CONTENT_LENGTH"] = 1 << 10
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+turn_duration = 0.3
+
+game = Game()
+board_str = dumps([
+    {"row": obstacle.pos.row, "col": obstacle.pos.col, "tall": obstacle.tall}
+    for obstacle in game.obstacles
+])
+
+last_update = time()
+last_status: str = dumps(game.turn())
+
 side: dict[str, bool] = {}
 
-# SocketIO 事件处理
+def run_game():
+    global last_update, last_status
+    while True:
+        last_update = time()
+        for player in game.players:
+            player.direction = randint(0, 3)
+        last_status = dumps(game.turn())
+        socketio.emit("turn", last_status, to="left") # type: ignore
+        socketio.emit("turn", last_status, to="right") # type: ignore
+        sleep(turn_duration)
+
 @socketio.on('connect')
 def handle_connect():
-    print('客户端已连接')
-    emit('server_response', {'data': '连接成功'})
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('客户端断开连接')
+    if request.remote_addr in side:
+        join_room("right" if side[request.remote_addr] else "left")
 
 @socketio.on('client_message')
 def handle_message(data: Any):
     print('收到消息:', data)
-    # 广播给所有客户端
-    emit('server_response', {'data': f'收到: {data}'}, broadcast=True)
-    # 或回复给发送者
-    emit('server_response', {'data': f'消息已处理; {request.remote_addr}'})
+    # emit('server_response', {'data': f'收到: {data}'}, broadcast=True)
+    # emit('server_response', {'data': f'消息已处理; {request.remote_addr}'})
 
 @app.route("/left")
 def left():
@@ -42,7 +63,14 @@ def right():
 @app.route("/")
 def index():
     if request.remote_addr in side:
-        return render_template("index.html", side=side[request.remote_addr])
+        return render_template("index.html",
+                               side=side[request.remote_addr],
+                               board=board_str,
+                               last_update=last_update,
+                               last_status=last_status,
+                               lscore=game.lscore,
+                               rscore=game.rscore,
+                               turn_duration=turn_duration)
     return render_template("select.html")
 
 @app.route("/<path:filename>")
@@ -55,4 +83,6 @@ def debugging_required(_):
     return render_template("404.html"), 404
 
 if __name__ == '__main__':
+    t = Thread(target=run_game, daemon=True)
+    t.start()
     app.run("0.0.0.0", 80, True)

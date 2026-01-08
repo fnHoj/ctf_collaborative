@@ -3,4 +3,9 @@
     image-rendering: pixelated;
     font-family: sans-serif;
     font-size: 24px;
+    user-select: none;
+    text-align: center;
+}
+body {
+    margin: 0;
 }
