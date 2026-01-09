@@ -48,3 +48,9 @@ class Grid(Generic[T]):
     def __init__(self, vals: Callable[[Coords], T]) -> None:
         super().__init__()
         self.data = [[vals(Coords(row, col)) for col in range(20)] for row in range(20)]
+
+def iabs(x: int) -> int:
+    return x if x >= 0 else -x
+
+def dist(p0: Coords, p1: Coords) -> int:
+    return iabs(p0.row - p1.row) + iabs(p0.col - p1.col)

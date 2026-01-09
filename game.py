@@ -1,6 +1,6 @@
-from grid import Coords, Grid, Callable
+from grid import Coords, Grid, dist
 from random import randint
-from typing import Any
+from typing import Any, Callable
 
 class Obstacle:
     pos: Coords
@@ -27,11 +27,15 @@ class Player(TeamObject):
     direction: int
     prison: bool
     flag: int
+
     def __init__(self, team: bool, pos: Coords, direction: int = 4, flag: int = -1, prison: bool = False) -> None:
         super().__init__(team, pos)
         self.direction = direction
         self.prison = prison
         self.flag = flag
+    
+    def safe(self) -> bool:
+        return (self.pos.col >= 10) if self.team else (self.pos.col < 10)
 
 class Flag(TeamObject):
     ground: bool
@@ -88,6 +92,8 @@ class Game(Board):
     flags: list[Flag]
     lprison_turns: int
     rprison_turns: int
+    lprison_num: int
+    rprison_num: int
     lscore: int
     rscore: int
 
@@ -97,6 +103,8 @@ class Game(Board):
         self.players = [Player(False, Coords(i + 1, 1)) for i in range(3)] + [Player(True, Coords(i + 1, 18)) for i in range(3)]
         self.lprison_turns = 0
         self.rprison_turns = 0
+        self.lprison_num = 0
+        self.rprison_num = 0
         self.lscore = 0
         self.rscore = 0
         for _ in range(9):
@@ -125,6 +133,50 @@ class Game(Board):
             }
             for flag in self.flags
         ]
+        if self.lprison_turns and any(self.lprison[player.pos] for player in self.players if not player.team and not player.prison):
+            self.lprison_turns = 1
+        if self.rprison_turns and any(self.rprison[player.pos] for player in self.players if player.team and not player.prison):
+            self.rprison_turns = 1
+        if self.lprison_turns:
+            self.lprison_turns -= 1
+            if not self.lprison_turns:
+                self.lprison_num = 0
+                for player in self.players:
+                    if not player.team:
+                        player.prison = False
+        if self.rprison_turns:
+            self.rprison_turns -= 1
+            if not self.rprison_turns:
+                self.rprison_num = 0
+                for player in self.players:
+                    if player.team:
+                        player.prison = False
+        for player in self.players:
+            if player.prison or player.safe():
+                continue
+            for p1 in self.players:
+                if p1.team == player.team or p1.prison or not p1.safe():
+                    continue
+                if dist(player.pos, p1.pos) <= 1:
+                    player.prison = True
+                    if ~player.flag:
+                        self.flags[player.flag].pos = player.pos
+                        self.flags[player.flag].ground = True
+                        flags[player.flag]["prow"] = player.pos.row
+                        flags[player.flag]["pcol"] = player.pos.col
+                        flags[player.flag]["row"] = player.pos.row
+                        flags[player.flag]["col"] = player.pos.col
+                        player.flag = -1
+                    if player.team:
+                        player.pos = Coords(16 + self.rprison_num // 3, 16 + self.rprison_num % 3)
+                        self.rprison_num += 1
+                        if not self.rprison_turns:
+                            self.rprison_turns = 64
+                    else:
+                        player.pos = Coords(16 + self.lprison_num // 3, 1 + self.lprison_num % 3)
+                        self.lprison_num += 1
+                        if not self.lprison_turns:
+                            self.lprison_turns = 64
         for i, flag in enumerate(self.flags):
             if flag.destined:
                 flag.destined -= 1
@@ -162,19 +214,21 @@ class Game(Board):
                     if not flag.destined and flag.team == player.team and flag.pos == player.pos:
                         flag.ground = False
                         player.flag = i
-            if player.direction == 0:
-                target += Coords(1, 0)
-            elif player.direction == 1:
-                target += Coords(-1, 0)
-            elif player.direction == 2:
-                target += Coords(0, 1)
-            elif player.direction == 3:
-                target += Coords(0, -1)
+                        break
+            if not player.prison:
+                if player.direction == 0:
+                    target += Coords(1, 0)
+                elif player.direction == 1:
+                    target += Coords(-1, 0)
+                elif player.direction == 2:
+                    target += Coords(0, 1)
+                elif player.direction == 3:
+                    target += Coords(0, -1)
             if not target.valid() or self.barriers[target]:
                 player.direction = 4
                 target = player.pos
             player.pos = target
-            p["direction"] = player.direction
+            p["direction"] = 4 if player.prison else player.direction
             p["flag"] = bool(~player.flag)
             p["prison"] = player.prison
             res.append(p)
