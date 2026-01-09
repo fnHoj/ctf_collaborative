@@ -233,7 +233,7 @@ class Game(Board):
             p["prison"] = player.prison
             res.append(p)
         return {
-            "t": t,
+            "t": t * 1000,
             "players": res,
             "flags": [flag for i, flag in enumerate(flags) if self.flags[i].ground],
             "lscore": self.lscore,
