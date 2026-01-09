@@ -58,12 +58,12 @@
         <p class="controls"><kbd>WASD</kbd>: move around<br/><kbd>Q/E</kbd>: switch player<br/><kbd>Space</kbd>: stand still</p>
         <div class="side left">
             <p id="lscore">{{ lscore }}</p>
-            {{ "" if side else '<img src="assets/l1.gif"/>'|safe }}
+            {{ "" if side else '<img id="char" src="assets/l1.gif"/>'|safe }}
         </div>
         <canvas id="game" width="640" height="640"></canvas>
         <div class="side right">
             <p id="rscore">{{ rscore }}</p>
-            {{ '<img src="assets/r1.gif"/>'|safe if side else "" }}
+            {{ '<img id="char" src="assets/r1.gif"/>'|safe if side else "" }}
         </div>
     </div>
     <div id="error">
@@ -93,6 +93,9 @@
         const main = document.getElementById("main");
         const error = document.getElementById("error");
         const error_msg = document.getElementById("error_msg");
+        const lscore = document.getElementById("lscore");
+        const rscore = document.getElementById("rscore");
+        const char = document.getElementById("char");
         
         const anim_step = 150;
         const /** @type {HTMLCanvasElement} */ game_canvas = document.getElementById("game");
@@ -115,8 +118,12 @@
 
         const tileset = new Image();
         const chars = new Image();
+        const red_flag = new Image();
+        const yellow_flag = new Image();
         tileset.src = "/assets/tiles.png";
         chars.src = "/assets/characters.png";
+        red_flag.src = "/assets/red_flag_32_32.png"
+        yellow_flag.src = "/assets/yellow_flag_32_32.png"
 
         function show_main() {
             main.style.display = "flex";
@@ -181,14 +188,22 @@
             return 0;
         }
 
+        function draw_flags(t = performance.now()) {
+            const v = (t - updated) / turn_duration;
+            const u = 1 - v;
+            for (const {row, col, prow, pcol, team} of status.flags) {
+                ctx.drawImage(team ? red_flag : yellow_flag, (pcol * u + col * v) * 32, (prow * u + row * v) * 32);
+            }
+        }
+
         function draw_players(t = performance.now()) {
             let ds = (t - updated) / turn_duration;
-            for (let i = 0; i < status.length; i++) {
-                let sx = status[i].direction;
+            for (let i = 0; i < status.players.length; i++) {
+                let sx = status.players[i].direction;
                 let sy = anim(t);
-                let y = status[i].row;
-                let x = status[i].col;
-                switch (status[i].direction) {
+                let y = status.players[i].row;
+                let x = status.players[i].col;
+                switch (status.players[i].direction) {
                     case 0:
                         y += ds;
                         break;
@@ -203,9 +218,10 @@
                         break;
                     default:
                         sx = 0;
-                        if (!status[i].prison)
+                        if (!status.players[i].prison)
                             sy = 0;
                 }
+                ctx.drawImage(chars, sx << 5, (sy + (status.players[i].flag ? 6 : 0) + (status.players[i].team ? 3 : 0)) << 5, 0x20, 0x20, x * 32, y * 32, 0x20, 0x20);
                 if (i == cp) {
                     let a = t / (4 * anim_step);
                     a -= Math.floor(a);
@@ -225,13 +241,33 @@
                     ctx.strokeStyle = "#fff";
                     ctx.stroke(p);
                 }
-                ctx.drawImage(chars, sx << 5, (sy + (status[i].flag ? 6 : 0) + (status[i].team ? 3 : 0)) << 5, 0x20, 0x20, x * 32, y * 32, 0x20, 0x20);
+                else if (i == qp) {
+                    ctx.fillStyle = "#fff";
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = "#000";
+                    ctx.font = "16px monospace";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.strokeText("Q", x * 32 + 16, y * 32);
+                    ctx.fillText("Q", x * 32 + 16, y * 32);
+                }
+                else if (i == ep) {
+                    ctx.fillStyle = "#fff";
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = "#000";
+                    ctx.font = "16px monospace";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.strokeText("E", x * 32 + 16, y * 32);
+                    ctx.fillText("E", x * 32 + 16, y * 32);
+                }
             }
         }
         
         function render(t = performance.now()) {
             ctx.drawImage(bg_canvas, 0, 0);
-            draw_players();
+            draw_flags(t);
+            draw_players(t);
         }
 
         function init() {
@@ -244,8 +280,31 @@
                 show_error("Connecting to server...");
             });
             socket.on("turn", data => {
+                const tmp = JSON.parse(data);
                 updated = performance.now();
+                if (side ? (tmp.rscore !== status.rscore) : (tmp.lscore !== status.lscore))
+                    char.animate([
+                        {transform: "translateY(0)"},
+                        {transform: "translateY(-256px)"},
+                        {transform: "translateY(0)"},
+                        {transform: "translateY(-256px)"},
+                        {transform: "translateY(0)"},
+                    ], turn_duration);
+                else if (side ? (tmp.lscore !== status.lscore) : (tmp.rscore !== status.rscore))
+                    char.animate([
+                        {transform: "translateX(0)"},
+                        {transform: "translateX(-64px)"},
+                        {transform: "translateX(0)"},
+                        {transform: "translateX(64px)"},
+                        {transform: "translateX(0)"},
+                        {transform: "translateX(-64px)"},
+                        {transform: "translateX(0)"},
+                        {transform: "translateX(64px)"},
+                        {transform: "translateX(0)"},
+                    ], turn_duration);
                 status = JSON.parse(data);
+                lscore.textContent = status.lscore;
+                rscore.textContent = status.rscore;
             });
             addEventListener("keydown", e => {
                 if (e.repeat)

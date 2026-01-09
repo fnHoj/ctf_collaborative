@@ -6,8 +6,6 @@ from game import Game
 from time import time, sleep
 from json import dumps
 
-from random import randint
-
 app = Flask(__name__, static_folder="static")
 app.config["SECRET_KEY"] = "pIvF83EHXOPh8S8iUSRRcBJMM4Vt98puOJIh_nsAQ2x05td82xPXO8TrCGe3X3OF9S6WxrtLQQQO7UkYX7fArcDHidg0UkeUF_BExbJi1beWD8L2wq5nFgVEVsSOgEBkjv5gStJpMGlcREK5R8nM4SPrSdlry1SwfgWRnvYxF6pRTxopfKHefDKcW_MBNjfOo37lDnlvP94roO4qhp_tsEUOQWntKT2BcNic0O_rm8okcna_0vxQj_8Qc6Bq1Ptt"
 app.config["MAX_CONTENT_LENGTH"] = 1 << 10
@@ -33,8 +31,6 @@ def run_game():
     global last_update, last_status
     while True:
         last_update = time()
-        # for player in game.players:
-        #     player.direction = randint(0, 3)
         last_status = dumps(game.turn())
         socketio.emit("turn", last_status, to="left") # type: ignore
         socketio.emit("turn", last_status, to="right") # type: ignore
@@ -74,13 +70,14 @@ def right():
 def index():
     if request.remote_addr in side:
         return render_template("index.html",
-                               side=side[request.remote_addr],
-                               board=board_str,
-                               last_update=last_update,
-                               last_status=last_status,
-                               lscore=game.lscore,
-                               rscore=game.rscore,
-                               turn_duration=turn_duration)
+            side=side[request.remote_addr],
+            board=board_str,
+            last_update=last_update,
+            last_status=last_status,
+            lscore=game.lscore,
+            rscore=game.rscore,
+            turn_duration=turn_duration
+        )
     return render_template("select.html")
 
 @app.route("/<path:filename>")
