@@ -40,13 +40,16 @@
         .anim {
             display: none;
         }
-        #main > :hover {
+        :focus {
+            outline: none;
+        }
+        #main > :hover, #main:not(:has(:hover)) > :focus {
             background-color: #fff1;
         }
-        #main > :hover .anim {
+        #main > :hover .anim, #main:not(:has(:hover)) > :focus .anim {
             display: block;
         }
-        #main > :hover .still {
+        #main > :hover .still, #main:not(:has(:hover)) > :focus .still {
             display: none;
         }
     </style>

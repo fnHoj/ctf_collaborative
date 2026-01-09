@@ -43,6 +43,8 @@ def handle_connect():
         for i, player in enumerate(game.players):
             if player.team == side[request.remote_addr]:
                 emit("move", {"p": i, "d": player.direction})
+    else:
+        emit("refresh")
 
 @socketio.on('move')
 def handle_message(data: dict[str, Any]):
@@ -96,4 +98,4 @@ def debugging_required(_):
 if __name__ == '__main__':
     t = Thread(target=run_game, daemon=True)
     t.start()
-    app.run("0.0.0.0", 80, True)
+    app.run("0.0.0.0", 80)

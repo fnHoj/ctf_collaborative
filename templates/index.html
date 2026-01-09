@@ -32,13 +32,18 @@
             align-items: stretch;
             justify-content: space-between;
         }
+        .flag {
+            margin-block-start: min(2em, 15%);
+            inline-size: min(64px, 100%);
+            margin-inline: auto;
+        }
         .side p {
-            margin-block: min(1em, 15%) 0;
+            margin-block: 0;
             font-weight: bold;
             font-family: monospace;
             font-size: 400%;
         }
-        .side img {
+        #char {
             inline-size: min(128px, 100%);
             margin-inline: auto;
         }
@@ -49,6 +54,9 @@
             margin: 0;
             color: #777;
         }
+        kbd {
+            font-weight: bold;
+        }
     </style>
     <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
 </head>
@@ -57,12 +65,18 @@
     <div id="main">
         <p class="controls"><kbd>WASD</kbd>: move around<br/><kbd>Space</kbd>: stand still<br/><kbd>Q/E</kbd>: switch player</p>
         <div class="side left">
-            <p id="lscore">{{ lscore }}</p>
+            <div>
+                <img class="flag" src="/assets/yellow_flag_32_32.png"/>
+                <p id="lscore">{{ lscore }}</p>
+            </div>
             {{ "" if side else '<img id="char" src="assets/l1.gif"/>'|safe }}
         </div>
         <canvas id="game" width="640" height="640"></canvas>
         <div class="side right">
-            <p id="rscore">{{ rscore }}</p>
+            <div>
+                <img class="flag" src="/assets/red_flag_32_32.png"/>
+                <p id="rscore">{{ rscore }}</p>
+            </div>
             {{ '<img id="char" src="assets/r1.gif"/>'|safe if side else "" }}
         </div>
     </div>
@@ -305,6 +319,7 @@
             socket.on("move", data => {
                 next_actions[data.p] = data.d;
             });
+            socket.on("refresh", () => location.href = "/");
             socket.on("turn", data => {
                 const tmp = JSON.parse(data);
                 updated = performance.now();
