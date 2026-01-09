@@ -322,13 +322,6 @@
                 }
             }
         }
-
-        function move(d) {
-            if (status.players[cp].team != side)
-                return;
-            next_actions[cp] = d;
-            socket.emit("move", {p: cp, d});
-        }
         
         function render(t = performance.now()) {
             ctx.drawImage(bg_canvas, 0, 0);
@@ -337,6 +330,12 @@
         }
 
         function init() {
+            function move(d) {
+                if (status.players[cp].team != side)
+                    return;
+                next_actions[cp] = d;
+                socket.emit("move", {p: cp, d});
+            }
             draw_bg();
             const socket = io();
             socket.on("connect", () => {
