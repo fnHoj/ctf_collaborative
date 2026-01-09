@@ -308,7 +308,10 @@
             socket.on("turn", data => {
                 const tmp = JSON.parse(data);
                 updated = performance.now();
-                if (side ? (tmp.rscore !== status.rscore) : (tmp.lscore !== status.lscore))
+                if (side
+                    ? (tmp.rscore > status.rscore || tmp.lprison_num > status.lprison_num)
+                    : (tmp.lscore > status.lscore || tmp.rprison_num > status.rprison_num)
+                )
                     char.animate([
                         {transform: "translateY(0)"},
                         {transform: "translateY(-256px)"},
@@ -316,7 +319,10 @@
                         {transform: "translateY(-256px)"},
                         {transform: "translateY(0)"},
                     ], turn_duration);
-                else if (side ? (tmp.lscore !== status.lscore) : (tmp.rscore !== status.rscore))
+                else if (side
+                    ? (tmp.lscore > status.lscore || tmp.rprison_num > status.rprison_num)
+                    : (tmp.rscore > status.rscore || tmp.lprison_num > status.lprison_num)
+                )
                     char.animate([
                         {transform: "translateX(0)"},
                         {transform: "translateX(-64px)"},

@@ -236,5 +236,7 @@ class Game(Board):
             "players": res,
             "flags": [flag for i, flag in enumerate(flags) if self.flags[i].ground],
             "lscore": self.lscore,
-            "rscore": self.rscore
+            "rscore": self.rscore,
+            "lprison_num": self.lprison_num,
+            "rprison_num": self.rprison_num,
         }
