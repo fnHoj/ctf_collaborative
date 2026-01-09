@@ -19,21 +19,21 @@ class Coords:
         return self.row, self.col
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, Coords):
+        if not isinstance(other, "Coords"):
             raise NotImplemented
         return self.row == other.row and self.col == other.col
 
-    def __lt__(self, other: Coords) -> bool:
+    def __lt__(self, other: "Coords") -> bool:
         return (
             self.row < other.row
             if self.row != other.row else
             self.col < other.col
         )
 
-    def __add__(self, other: Coords) -> Coords:
+    def __add__(self, other: "Coords") -> "Coords":
         return Coords(self.row + other.row, self.col + other.col)
 
-    def __sub__(self, other: Coords) -> Coords:
+    def __sub__(self, other: "Coords") -> "Coords":
         return Coords(self.row - other.row, self.col - other.col)
 
 class Grid(Generic[T]):
