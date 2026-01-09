@@ -214,10 +214,11 @@
         }
 
         function draw_players(t = performance.now()) {
-            let ds = (t - updated) / turn_duration;
+            const ds = (t - updated) / turn_duration;
+            const animy = anim(t)
             for (let i = 0; i < status.players.length; i++) {
                 let sx = status.players[i].direction;
-                let sy = anim(t);
+                let sy = animy;
                 let y = status.players[i].row;
                 let x = status.players[i].col;
                 let tx = x;
@@ -243,6 +244,27 @@
                         sx = 0;
                         if (!status.players[i].prison)
                             sy = 0;
+                }
+                if (ds >= 1 && typeof next_actions[i] === "number") {
+                    x = tx;
+                    y = ty;
+                    sx = next_actions[i];
+                    switch (next_actions[i]) {
+                        case 0:
+                            y += ds - 1;
+                            break;
+                        case 1:
+                            y -= ds - 1;
+                            break;
+                        case 2:
+                            x += ds - 1;
+                            break;
+                        case 3:
+                            x -= ds - 1;
+                            break;
+                        default:
+                            sx = 0;
+                    }
                 }
                 switch (next_actions[i]) {
                     case 0:
@@ -322,7 +344,6 @@
             socket.on("refresh", () => location.href = "/");
             socket.on("turn", data => {
                 const tmp = JSON.parse(data);
-                updated = tmp.t - performance.timeOrigin;
                 if (side
                     ? (tmp.rscore > status.rscore || tmp.lprison_num > status.lprison_num)
                     : (tmp.lscore > status.lscore || tmp.rprison_num > status.rprison_num)
@@ -349,7 +370,8 @@
                         {transform: "translateX(64px)"},
                         {transform: "translateX(0)"},
                     ], turn_duration);
-                status = JSON.parse(data);
+                status = tmp;
+                updated = tmp.t - performance.timeOrigin;
                 lscore.textContent = status.lscore;
                 rscore.textContent = status.rscore;
             });
