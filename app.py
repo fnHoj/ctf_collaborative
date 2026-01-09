@@ -40,6 +40,9 @@ def run_game():
 def handle_connect():
     if request.remote_addr in side:
         join_room("right" if side[request.remote_addr] else "left")
+        for i, player in enumerate(game.players):
+            if player.team == side[request.remote_addr]:
+                emit("move", {"p": i, "d": player.direction})
 
 @socketio.on('move')
 def handle_message(data: dict[str, Any]):
@@ -51,6 +54,7 @@ def handle_message(data: dict[str, Any]):
         if d < 0 or d > 4:
             d = 4
         game.players[p].direction = d
+        socketio.emit("move", {"p": p, "d": d}, to=("right" if side[request.remote_addr] else "left")) # type: ignore
     except:
         pass
 

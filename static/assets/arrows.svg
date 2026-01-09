@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="64">
+    <defs>
+        <style>
+            :root {
+                color-scheme: dark;
+            }
+        </style>
+        <linearGradient id="Gradient" x1="0" y1="0" x2="0" y2="1"> 
+            <stop offset="0.25" stop-color="#000" />
+            <stop offset="1" stop-color="#aaa" />
+        </linearGradient>
+        <mask id="mask">
+            <rect x="0" y="0" width="32" height="64" fill="url(#Gradient)" />
+        </mask>
+    </defs>
+    <g id="down">
+        <path mask="url(#mask)" style="fill: #fff; stroke: #000; stroke-width: 2;" d="M8 16V32H4L16 44L28 32H24V16"/>
+    </g>
+    <use href="#down" style="transform: matrix(1, 0, 0, -1, 32, 64);"/>
+    <use href="#down" style="transform: matrix(0, 1, 1, 0, 64, 0)"/>
+    <use href="#down" style="transform: matrix(0, 1, -1, 0, 128, 32)"/>
+</svg>
