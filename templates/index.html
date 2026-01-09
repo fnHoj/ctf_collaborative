@@ -325,7 +325,7 @@
 
         function move(d) {
             if (status.players[cp].team != side)
-                continue;
+                return;
             next_actions[cp] = d;
             socket.emit("move", {p: cp, d});
         }
