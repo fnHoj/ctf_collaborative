@@ -322,7 +322,7 @@
             socket.on("refresh", () => location.href = "/");
             socket.on("turn", data => {
                 const tmp = JSON.parse(data);
-                updated = performance.now();
+                updated = tmp.t - performance.timeOrigin;
                 if (side
                     ? (tmp.rscore > status.rscore || tmp.lprison_num > status.lprison_num)
                     : (tmp.lscore > status.lscore || tmp.rprison_num > status.rprison_num)

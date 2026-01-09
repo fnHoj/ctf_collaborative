@@ -23,7 +23,7 @@ board_str = dumps([
 ])
 
 last_update = time()
-last_status: str = dumps(game.turn())
+last_status: str = dumps(game.turn(time()))
 
 side: dict[str, bool] = {}
 
@@ -31,7 +31,7 @@ def run_game():
     global last_update, last_status
     while True:
         last_update = time()
-        last_status = dumps(game.turn())
+        last_status = dumps(game.turn(time()))
         socketio.emit("turn", last_status, to="left") # type: ignore
         socketio.emit("turn", last_status, to="right") # type: ignore
         sleep(turn_duration)

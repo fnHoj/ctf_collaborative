@@ -121,7 +121,7 @@ class Game(Board):
                 self.flags.append(Flag(False, x))
                 break
     
-    def turn(self) -> dict[str, Any]:
+    def turn(self, t: float) -> dict[str, Any]:
         res: list[dict[str, int | bool]] = []
         flags: list[dict[str, int]] = [
             {
@@ -233,6 +233,7 @@ class Game(Board):
             p["prison"] = player.prison
             res.append(p)
         return {
+            "t": t,
             "players": res,
             "flags": [flag for i, flag in enumerate(flags) if self.flags[i].ground],
             "lscore": self.lscore,
