@@ -19,7 +19,7 @@ class Coords:
         return self.row, self.col
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, "Coords"):
+        if not isinstance(other, Coords):
             raise NotImplemented
         return self.row == other.row and self.col == other.col
 
