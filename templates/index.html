@@ -322,6 +322,13 @@
                 }
             }
         }
+
+        function move(d) {
+            if (status.players[cp].team != side)
+                continue;
+            next_actions[cp] = d;
+            socket.emit("move", {p: cp, d});
+        }
         
         function render(t = performance.now()) {
             ctx.drawImage(bg_canvas, 0, 0);
@@ -386,19 +393,20 @@
                         ep ^= cp; cp ^= ep; ep ^= cp;
                         break;
                     case "KeyW":
-                        socket.emit("move", {p: cp, d: 1});
+                        move(1);
                         break;
                     case "KeyA":
-                        socket.emit("move", {p: cp, d: 3});
+                        move(3);
                         break;
                     case "KeyS":
-                        socket.emit("move", {p: cp, d: 0});
+                        move(0);
                         break;
                     case "KeyD":
-                        socket.emit("move", {p: cp, d: 2});
+                        move(2);
                         break;
                     case "Space":
-                        socket.emit("move", {p: cp, d: 4});
+                        move(4);
+                        break;
                 }
             });
             frame();
